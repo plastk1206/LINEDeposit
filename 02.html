@@ -4,177 +4,341 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>租屋定金收據（簽署版）</title>
+  <!-- 引入 Noto Sans TC 字體 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
+    /* 基本樣式設定 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
     body {
       font-family: 'Noto Sans TC', sans-serif;
       background-color: #f5f5f5;
       margin: 0;
       padding: 1rem;
+      color: #333;
+      line-height: 1.6;
     }
+    
+    /* A4 尺寸容器設定 */
     .container {
+      width: 794px; /* A4 寬度 */
+      min-height: 1123px; /* A4 高度 */
+      margin: 0 auto;
       background: #fff;
-      border-radius: 16px;
+      background-image: linear-gradient(145deg, #f1eee7, #d8d5ce);
+      border: 1px solid #ddd;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      padding: 1.5rem;
-      max-width: 600px;
-      margin: auto;
+      padding: 40px;
+      position: relative;
     }
+    
+    /* 標題樣式 */
     h2 {
-      color: #00C300;
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
+      color: #333;
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      position: relative;
+      padding-bottom: 15px;
     }
+    
+    h2:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background-color: #555;
+    }
+    
+    /* 區塊樣式 */
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    
     .section-title {
-      font-weight: bold;
-      margin-top: 1.5rem;
-      margin-bottom: 0.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
       font-size: 1.1rem;
+      color: #333;
+      border-left: 4px solid #555;
+      padding-left: 10px;
     }
-    label {
-      display: block;
-      margin-top: 1rem;
+    
+    /* 標籤與值 */
+    .field-group {
+      display: flex;
+      margin-bottom: 15px;
+    }
+    
+    .label {
+      flex: 0 0 120px;
       font-weight: 500;
+      color: #444;
     }
+    
+    .value {
+      flex: 1;
+      padding: 6px 10px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      color: #222;
+      min-height: 36px;
+    }
+    
     input, textarea {
       width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.3rem;
+      padding: 8px 10px;
       border: 1px solid #ccc;
-      border-radius: 8px;
+      border-radius: 4px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 0.95rem;
+      color: #333;
+      background-color: #fff;
     }
+    
     input[readonly] {
-      background: #f1f1f1;
-      color: #555;
+      background: #f8f8f8;
+      color: #444;
     }
+    
+    /* 簽名區域 */
     .signature-box {
       border: 1px dashed #999;
       height: 150px;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-top: 0.5rem;
       background-color: #fff;
+      width: 100%;
     }
-    .clause-box {
-      background-color: #f8f8f8;
-      border: 1px solid #ddd;
-      padding: 1rem;
-      border-radius: 10px;
-      margin-top: 1rem;
+    
+    /* 條款區塊 */
+    .note {
+      background-color: #f9f9f7;
+      border-top: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      color: #555;
+      font-size: 0.95rem;
     }
+    
+    /* 勾選框群組 */
     .checkbox-group {
-      margin-top: 1rem;
-      text-align: left;
+      margin-top: 15px;
     }
+    
     .checkbox-group label {
       display: flex;
       align-items: flex-start;
       gap: 0.5rem;
-      justify-content: flex-start;
       line-height: 1.4;
-      margin-bottom: 0.8rem;
-      word-break: break-word;
-      white-space: normal;
+      margin-bottom: 10px;
+      color: #333;
     }
+    
     .checkbox-group input[type="checkbox"] {
       flex-shrink: 0;
       margin-top: 0.3rem;
-      width: 1.2rem;
-      height: 1.2rem;
+      width: 16px;
+      height: 16px;
     }
+    
+    /* 按鈕樣式 */
     .button-group {
-      margin-top: 2rem;
+      margin-top: 25px;
       display: flex;
-      gap: 1rem;
-      flex-direction: column;
+      gap: 15px;
+      justify-content: center;
     }
-    button {
-      padding: 0.75rem;
-      background-color: #00C300;
+    
+    button, .download-btn {
+      padding: 10px 20px;
+      background-color: #555;
       color: white;
       font-size: 1rem;
       border: none;
-      border-radius: 10px;
+      border-radius: 6px;
       cursor: pointer;
+      font-family: 'Noto Sans TC', sans-serif;
+      transition: background-color 0.2s;
     }
-    button:hover {
-      background-color: #00a800;
+    
+    button:hover, .download-btn:hover {
+      background-color: #333;
     }
-    .subtext {
-      font-size: 0.9rem;
+    
+    /* 頁尾 */
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #ccc;
       color: #666;
-      margin-top: 1rem;
+      font-size: 0.9rem;
       text-align: center;
     }
+    
+    /* 日期戳記 */
+    .date-stamp {
+      background-color: #f9f9f7;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 15px;
+      text-align: right;
+      color: #555;
+      font-size: 0.9rem;
+    }
   </style>
+  <!-- 引入必要的 JavaScript 庫 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <!-- 引入中文字型支援 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="receipt-form">
     <h2>租屋定金收據</h2>
-    <div class="section-title">一、房東預填資料（不可修改）</div>
-    <label>房東 / 仲介姓名</label>
-    <input type="text" id="name">
-    <label>租屋地址</label>
-    <input type="text" id="addr">
-    <label>租期（起）</label>
-    <input type="text" id="start">
-    <label>租期（迄）</label>
-    <input type="text" id="end">
-    <label>月租金</label>
-    <input type="number" id="rent" min="0" step="1">
-    <label>定金金額</label>
-    <input type="number" id="deposit" min="0" step="1">
-    <label>房東 Email</label>
-    <input type="email" id="landlord_email">
-    <div class="button-group">
-      <button onclick="shareToLine()">房東填寫完畢 ➜LINE 傳送給租客</button>
+    
+    <div class="section">
+      <div class="section-title">一、房東預填資料</div>
+      <div class="field-group">
+        <div class="label">房東 / 仲介姓名</div>
+        <div class="value">
+          <input type="text" id="name">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">租屋地址</div>
+        <div class="value">
+          <input type="text" id="addr">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">租期（起）</div>
+        <div class="value">
+          <input type="text" id="start">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">租期（迄）</div>
+        <div class="value">
+          <input type="text" id="end">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">月租金</div>
+        <div class="value">
+          <input type="number" id="rent" min="0" step="1">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">定金金額</div>
+        <div class="value">
+          <input type="number" id="deposit" min="0" step="1">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">房東 Email</div>
+        <div class="value">
+          <input type="email" id="landlord_email">
+        </div>
+      </div>
+      <div class="button-group">
+        <button onclick="shareToLine()">房東填寫完畢 ➜LINE 傳送給租客</button>
+      </div>
     </div>
 
-    <div class="section-title">二、承租人填寫資訊</div>
-    <label>承租人姓名</label>
-    <input type="text" id="tenant_name" placeholder="請輸入姓名">
-    <label>聯絡電話</label>
-    <input type="tel" id="tenant_phone" placeholder="請輸入電話">
-    <label>電子信箱</label>
-    <input type="email" id="tenant_email" placeholder="請輸入 Email">
-    <label>備註（如有）</label>
-    <textarea id="tenant_note" placeholder="如有其他說明事項，請在此填寫" rows="3" style="resize: vertical;"></textarea>
+    <div class="section">
+      <div class="section-title">二、承租人填寫資訊</div>
+      <div class="field-group">
+        <div class="label">承租人姓名</div>
+        <div class="value">
+          <input type="text" id="tenant_name" placeholder="請輸入姓名">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">聯絡電話</div>
+        <div class="value">
+          <input type="tel" id="tenant_phone" placeholder="請輸入電話">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">電子信箱</div>
+        <div class="value">
+          <input type="email" id="tenant_email" placeholder="請輸入 Email">
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">備註（如有）</div>
+        <div class="value">
+          <textarea id="tenant_note" placeholder="如有其他說明事項，請在此填寫" rows="3" style="resize: vertical;"></textarea>
+        </div>
+      </div>
+    </div>
 
-    <div class="section-title">三、承租人條款同意確認</div>
-    <div class="clause-box">
-      <ul style="padding-left: 1.2rem; margin: 0; font-size: 0.95rem; line-height: 1.6;">
-        <li>訂金為保留租賃意願之用，一旦審核通過即成立契約預約。</li>
-        <li>若於預定簽約日前，因甲方（承租人）之事由致不能履行時，定金不得請求返還。</li>
-        <li>若乙方同意後，因乙方之事由致不能履行時，應雙倍返還定金。</li>
-      </ul>
-    </div>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="check1">我了解並同意相關仲介服務費條款。</label>
-      <label><input type="checkbox" id="check2">我已詳細閱讀並同意上述條款內容，並確認提供資料為真實無誤。</label>
-      <label><input type="checkbox" id="check3">本人了解，本訂金為租賃意願之擔保，並不代表已完成承租程序，仍需經出租人進行資料審核。</label>
-      <label><input type="checkbox" id="check4">我了解本收據具《民法第249條》所定之法律效力，並同意受其約束。</label>
+    <div class="section">
+      <div class="section-title">三、承租人條款同意確認</div>
+      <div class="note">
+        <ul style="padding-left: 1.2rem; margin: 0; font-size: 0.95rem; line-height: 1.6;">
+          <li>訂金為保留租賃意願之用，一旦審核通過即成立契約預約。</li>
+          <li>若於預定簽約日前，因甲方（承租人）之事由致不能履行時，定金不得請求返還。</li>
+          <li>若乙方同意後，因乙方之事由致不能履行時，應雙倍返還定金。</li>
+        </ul>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="check1">我了解並同意相關仲介服務費條款。</label>
+        <label><input type="checkbox" id="check2">我已詳細閱讀並同意上述條款內容，並確認提供資料為真實無誤。</label>
+        <label><input type="checkbox" id="check3">本人了解，本訂金為租賃意願之擔保，並不代表已完成承租程序，仍需經出租人進行資料審核。</label>
+        <label><input type="checkbox" id="check4">我了解本收據具《民法第249條》所定之法律效力，並同意受其約束。</label>
+      </div>
     </div>
 
-    <div class="section-title">四、承租人簽名確認</div>
-    <div style="position: relative; width: 100%; max-width: 100%;">
-      <canvas id="signature-pad" class="signature-box" style="width: 100%; max-width: 100%;"></canvas>
-      <span style="position: absolute; top: 10px; left: 16px; color: #aaa; font-size: 0.9rem;">在此簽名</span>
+    <div class="section">
+      <div class="section-title">四、承租人簽名確認</div>
+      <div style="position: relative;">
+        <canvas id="signature-pad" class="signature-box"></canvas>
+        <span style="position: absolute; top: 10px; left: 16px; color: #aaa; font-size: 0.9rem;">在此簽名</span>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="email_checkbox"> 同時發送 Email 備份</label>
+      </div>
+      <div class="button-group">
+        <button style="background-color: #777;" onclick="clearSignature()">清除簽名</button>
+        <button class="download-btn" onclick="submitForm()">送出並存為 PDF 檔</button>
+      </div>
     </div>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="email_checkbox"> 同時發送 Email 備份</label>
+
+    <div class="date-stamp">
+      製作日期：<span id="current-date"></span>
     </div>
-    <div class="button-group">
-      <button style="background-color: #ccc; color: #333;" onclick="clearSignature()">清除簽名</button>
-      <button onclick="submitForm()">送出並存為 PDF 檔</button>
+    
+    <div class="footer">
+      本文件為法律效力文件，請妥善保存。
     </div>
-    <p class="subtext">請填寫表單資訊並簽名確認。</p>
   </div>
 
   <script>
+    // 設定當前日期
+    document.addEventListener('DOMContentLoaded', function() {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}年${(now.getMonth()+1)}月${now.getDate()}日`;
+      document.getElementById('current-date').textContent = dateStr;
+    });
+    
+    // 簽名板初始化
     const canvas = document.getElementById('signature-pad');
     const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
 
@@ -330,7 +494,7 @@
     }
 
     function generateImagePDF() {
-      const container = document.querySelector('.container');
+      const container = document.getElementById('receipt-form');
       
       // 顯示處理狀態
       const originalHTML = container.innerHTML;
@@ -345,38 +509,62 @@
         const newSignaturePad = new SignaturePad(newCanvas);
         newSignaturePad.fromDataURL(signaturePad.toDataURL());
         
+        // 設定印出前的樣式，優化PDF外觀
+        const originalStyle = container.style.cssText;
+        
         // 使用html2canvas將整個表單轉換為圖片
         html2canvas(container, {
           scale: 2, // 提高圖像質量
           logging: false,
           useCORS: true,
-          allowTaint: true
+          allowTaint: true,
+          windowWidth: 794, // A4寬度(px)
+          windowHeight: 1123 // A4高度(px)
         }).then(canvas => {
           try {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const doc = new jsPDF({
+              orientation: 'portrait',
+              unit: 'mm',
+              format: 'a4',
+              compress: true
+            });
             
             // 將畫布轉換為圖片
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL('image/jpeg', 0.95); // 使用JPEG格式提高相容性
             
             // 計算適當的大小來適應 A4 紙張
             const imgWidth = 210; // A4 width in mm
             const pageHeight = 297; // A4 height in mm
             const imgHeight = canvas.height * imgWidth / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
             
-            // 添加第一頁圖片
-            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            
-            // 如果內容超過一頁，添加新頁面
-            while (heightLeft >= 0) {
-              position = heightLeft - imgHeight;
-              doc.addPage();
-              doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            // 判斷內容是否需要分頁
+            if (imgHeight <= pageHeight) {
+              // 內容適合單頁，置中顯示
+              const yPosition = (pageHeight - imgHeight) / 2;
+              doc.addImage(imgData, 'JPEG', 0, yPosition, imgWidth, imgHeight);
+            } else {
+              // 內容超過一頁，需分頁處理
+              let heightLeft = imgHeight;
+              let position = 0;
+              let page = 1;
+              
+              // 添加第一頁圖片
+              doc.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
               heightLeft -= pageHeight;
+              
+              // 如果內容超過一頁，添加新頁面
+              while (heightLeft > 0) {
+                position = -pageHeight * page;
+                doc.addPage();
+                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                page++;
+              }
             }
+            
+            // 恢復原始樣式
+            container.style.cssText = originalStyle;
             
             // 生成檔案名稱
             const now = new Date();
@@ -393,12 +581,14 @@
           } catch (error) {
             console.error('PDF生成錯誤:', error);
             alert('PDF生成失敗，請重試: ' + error.message);
+            container.style.cssText = originalStyle; // 確保在錯誤情況下也恢復樣式
           }
         }).catch(error => {
           console.error('畫布生成錯誤:', error);
           alert('PDF生成失敗，請重試: ' + error.message);
+          container.style.cssText = originalStyle; // 確保在錯誤情況下也恢復樣式
         });
-      }, 100);
+      }, 200); // 稍微延長等待時間以確保UI更新
     }
 
     function sendEmailWithPDF() {
@@ -422,28 +612,6 @@
       setTimeout(() => {
         alert(`已將收據備份寄送至 ${tenantEmail}，請查收您的電子信箱`);
       }, 1500);
-      
-      /* 
-      // Real implementation would look like this:
-      emailjs.init("YOUR_USER_ID");
-      
-      const templateParams = {
-        to_email: tenantEmail,
-        cc_email: landlordEmail,
-        tenant_name: tenantName,
-        landlord_name: landlordName,
-        property_address: address,
-        // You could attach the PDF as a base64 string here
-      };
-      
-      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
-        .then(function(response) {
-          alert('電子郵件已成功寄出！');
-        }, function(error) {
-          alert('發送失敗，請稍後再試');
-          console.error('Email error:', error);
-        });
-      */
     }
   </script>
 </body>
