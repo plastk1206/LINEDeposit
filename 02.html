@@ -400,7 +400,65 @@
     }
 
     function generatePDF() {
-      const container = document.getElementById('form-container');
+  // 將表單資料寫入 PDF 區塊
+  document.getElementById("pdf-date").innerText = new Date().toLocaleDateString();
+  document.getElementById("pdf-landlord-name").innerText = document.getElementById("name").value;
+  document.getElementById("pdf-addr").innerText = document.getElementById("addr").value;
+  document.getElementById("pdf-start").innerText = document.getElementById("start").value;
+  document.getElementById("pdf-end").innerText = document.getElementById("end").value;
+  document.getElementById("pdf-rent").innerText = document.getElementById("rent").value;
+  document.getElementById("pdf-deposit").innerText = document.getElementById("deposit").value;
+  document.getElementById("pdf-tenant-name").innerText = document.getElementById("tenant_name").value;
+  document.getElementById("pdf-tenant-phone").innerText = document.getElementById("tenant_phone").value;
+  document.getElementById("pdf-tenant-email").innerText = document.getElementById("tenant_email").value;
+  document.getElementById("pdf-note").innerText = document.getElementById("tenant_note").value;
+
+  // 簽名圖像
+  const signatureImg = document.getElementById("pdf-signature");
+  signatureImg.src = signaturePad.toDataURL();
+
+  // 將隱藏的 pdf 區塊轉成 canvas
+  const pdfElement = document.getElementById("pdf-template");
+  pdfElement.style.display = "block"; // 顯示區塊但不顯示在畫面上
+  html2canvas(pdfElement, {
+    scale: 2,
+    logging: false,
+    useCORS: true,
+  }).then(canvas => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = 210;
+    const pageHeight = 297;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      doc.addPage();
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // PDF 命名格式
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+    const tenantName = document.getElementById('tenant_name').value || '租客';
+    const fileName = `租屋定金收據_${tenantName}_${dateStr}_${timeStr}.pdf`;
+
+    doc.save(fileName);
+    pdfElement.style.display = "none";
+    document.getElementById('loading-overlay').classList.add('hidden');
+    alert('PDF 已成功儲存！');
+  });
+}
+;
       
       // 使用html2canvas將整個表單轉換為圖片
       html2canvas(container, {
