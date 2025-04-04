@@ -387,7 +387,15 @@
   const rent = document.getElementById('rent').value;
   const deposit = document.getElementById('deposit').value;
 
-  const signatureDataUrl = signaturePad.toDataURL();
+  let signatureDataUrl = '';
+try {
+  signatureDataUrl = signaturePad.toDataURL();
+} catch (e) {
+  alert("簽名轉換失敗，請重新簽名！");
+  document.getElementById('loading-overlay').classList.add('hidden');
+  return;
+}
+
 
   // 組成預覽 HTML（你可以自行微調樣式與排版）
   preview.innerHTML = `
