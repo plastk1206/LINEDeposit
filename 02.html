@@ -127,9 +127,6 @@
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
 <body>
-  <div id="preview-container" class="hidden" style="padding: 2rem; background: white; width: 800px; font-size: 1rem;">
-  <!-- 稍後用 JS 自動填入租客資料與簽名 -->
-</div>
 
   <div id="loading-overlay" class="hidden">
     <h2>正在生成PDF...</h2>
@@ -156,7 +153,9 @@
     <div class="button-group">
       <button onclick="shareToLine()">房東填寫完畢 ➜LINE 傳送給租客</button>
     </div>
-
+<div id="preview-container" class="hidden" style="padding: 2rem; background: white; width: 800px; font-size: 1rem;">
+  <!-- 稍後用 JS 自動填入租客資料與簽名 -->
+</div>
     <div class="section-title">二、承租人填寫資訊</div>
     <label>承租人姓名</label>
     <input type="text" id="tenant_name" placeholder="請輸入姓名">
