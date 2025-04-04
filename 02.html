@@ -109,6 +109,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <!-- 引入中文字型支援 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -317,8 +319,8 @@
         document.getElementById('signature-pad').style.borderColor = '#999';
       }
 
-      // Generate PDF
-      generateTextPDF();
+      // 使用html2canvas直接將整個表單渲染為圖片形式的PDF
+      generateImagePDF();
       
       // Send email if checkbox is checked
       const sendEmail = document.getElementById('email_checkbox').checked;
@@ -327,214 +329,76 @@
       }
     }
 
-    function generateTextPDF() {
-      try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        
-        // 顯示處理狀態
-        const container = document.querySelector('.container');
-        const originalHTML = container.innerHTML;
-        container.innerHTML = "<div style='text-align:center; padding:40px;'><h2>正在生成PDF...</h2><p>請稍候</p></div>";
-        
-        // 獲取表單資料
-        const landlordName = document.getElementById('name').value;
-        const address = document.getElementById('addr').value;
-        const startDate = document.getElementById('start').value;
-        const endDate = document.getElementById('end').value;
-        const rent = document.getElementById('rent').value;
-        const deposit = document.getElementById('deposit').value;
-        const landlordEmail = document.getElementById('landlord_email').value;
-        
-        const tenantName = document.getElementById('tenant_name').value;
-        const tenantPhone = document.getElementById('tenant_phone').value;
-        const tenantEmail = document.getElementById('tenant_email').value;
-        const tenantNote = document.getElementById('tenant_note').value;
-        
-        const signatureData = signaturePad.toDataURL();
-        
-        // 設定PDF參數
-        const pageWidth = 210; // A4寬度mm
-        const margin = 20; // 邊距mm
-        const contentWidth = pageWidth - (margin * 2);
-        
-        // 設定字型和大小
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        
-        // 標題
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
-        doc.text('租屋定金收據', pageWidth/2, margin, {align: 'center'});
-        
-        // 日期
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`生成日期: ${dateStr}`, pageWidth - margin, margin + 10, {align: 'right'});
-        
-        let yPosition = margin + 20;
-        
-        // 分隔線
-        doc.setDrawColor(150, 150, 150);
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 10;
-        
-        // 一、房東資料
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.text('一、房東資料', margin, yPosition);
-        yPosition += 10;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        
-        const landlordInfo = [
-          `房東/仲介姓名: ${landlordName}`,
-          `租屋地址: ${address}`,
-          `租期: ${startDate} 至 ${endDate}`,
-          `月租金: ${rent} 元`,
-          `定金金額: ${deposit} 元`,
-          `房東Email: ${landlordEmail}`
-        ];
-        
-        landlordInfo.forEach(info => {
-          // 處理長文字換行
-          if (info.length > 60) {
-            const lines = doc.splitTextToSize(info, contentWidth);
-            lines.forEach(line => {
-              doc.text(line, margin, yPosition);
-              yPosition += 7;
-            });
-          } else {
-            doc.text(info, margin, yPosition);
-            yPosition += 7;
-          }
-        });
-        
-        // 分隔線
-        yPosition += 5;
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 10;
-        
-        // 二、承租人資料
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.text('二、承租人資料', margin, yPosition);
-        yPosition += 10;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        
-        const tenantInfo = [
-          `承租人姓名: ${tenantName}`,
-          `聯絡電話: ${tenantPhone}`,
-          `電子信箱: ${tenantEmail}`,
-          `備註: ${tenantNote || '(無)'}`
-        ];
-        
-        tenantInfo.forEach(info => {
-          // 處理長文字換行
-          if (info.length > 60) {
-            const lines = doc.splitTextToSize(info, contentWidth);
-            lines.forEach(line => {
-              doc.text(line, margin, yPosition);
-              yPosition += 7;
-            });
-          } else {
-            doc.text(info, margin, yPosition);
-            yPosition += 7;
-          }
-        });
-        
-        // 分隔線
-        yPosition += 5;
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 10;
-        
-        // 三、條款同意確認
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.text('三、條款同意確認', margin, yPosition);
-        yPosition += 10;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        
-        const clauses = [
-          '• 訂金為保留租賃意願之用，一旦審核通過即成立契約預約。',
-          '• 若於預定簽約日前，因甲方（承租人）之事由致不能履行時，定金不得請求返還。',
-          '• 若乙方同意後，因乙方之事由致不能履行時，應雙倍返還定金。'
-        ];
-        
-        clauses.forEach(clause => {
-          doc.text(clause, margin, yPosition);
-          yPosition += 7;
-        });
-        
-        yPosition += 3;
-        doc.text('承租人已確認並同意上述所有條款', margin, yPosition);
-        
-        // 分隔線
-        yPosition += 7;
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 10;
-        
-        // 四、簽名確認
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.text('四、承租人簽名確認', margin, yPosition);
-        yPosition += 10;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        
-        // 添加簽名圖片
-        const imgWidth = 70;
-        const imgHeight = 40;
-        try {
-          doc.addImage(signatureData, 'PNG', margin, yPosition, imgWidth, imgHeight);
-          yPosition += imgHeight + 10;
-        } catch (e) {
-          console.error('簽名圖片添加失敗:', e);
-          doc.text('簽名添加失敗', margin, yPosition);
-          yPosition += 10;
-        }
-        
-        // 添加確認日期
-        doc.text(`簽名確認日期: ${dateStr}`, margin, yPosition);
-        
-        // 頁腳
-        doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.text('本收據具有法律效力，請妥善保存', pageWidth/2, 280, {align: 'center'});
-        
-        // 生成檔案名稱
-        const fileTimeStr = `${today.getFullYear()}${(today.getMonth()+1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}_${today.getHours().toString().padStart(2, '0')}${today.getMinutes().toString().padStart(2, '0')}`;
-        const fileName = `租屋定金收據_${tenantName}_${fileTimeStr}.pdf`;
-        
-        // 儲存PDF
-        doc.save(fileName);
-        
-        // 還原表單
+    function generateImagePDF() {
+      const container = document.querySelector('.container');
+      
+      // 顯示處理狀態
+      const originalHTML = container.innerHTML;
+      container.innerHTML = "<div style='text-align:center; padding:40px;'><h2>正在生成PDF...</h2><p>請稍候</p></div>";
+      
+      setTimeout(() => {
+        // 恢復原始內容
         container.innerHTML = originalHTML;
         
         // 重新設置簽名欄
         const newCanvas = document.getElementById('signature-pad');
         const newSignaturePad = new SignaturePad(newCanvas);
-        newSignaturePad.fromDataURL(signatureData);
+        newSignaturePad.fromDataURL(signaturePad.toDataURL());
         
-        // 調整畫布大小
-        resizeCanvas();
-        
-        // 顯示成功訊息
-        alert('PDF 已成功儲存！');
-      } catch (error) {
-        console.error('PDF生成錯誤:', error);
-        alert('PDF生成失敗，請重試: ' + error.message);
-        
-        // 還原表單
-        const container = document.querySelector('.container');
-        container.innerHTML = originalHTML;
-        
-        // 調整畫布大小
-        resizeCanvas();
-      }
+        // 使用html2canvas將整個表單轉換為圖片
+        html2canvas(container, {
+          scale: 2, // 提高圖像質量
+          logging: false,
+          useCORS: true,
+          allowTaint: true
+        }).then(canvas => {
+          try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // 將畫布轉換為圖片
+            const imgData = canvas.toDataURL('image/png');
+            
+            // 計算適當的大小來適應 A4 紙張
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 297; // A4 height in mm
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            // 添加第一頁圖片
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            // 如果內容超過一頁，添加新頁面
+            while (heightLeft >= 0) {
+              position = heightLeft - imgHeight;
+              doc.addPage();
+              doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+              heightLeft -= pageHeight;
+            }
+            
+            // 生成檔案名稱
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+            const tenantName = document.getElementById('tenant_name').value || '租客';
+            const fileName = `租屋定金收據_${tenantName}_${dateStr}_${timeStr}.pdf`;
+            
+            // 儲存PDF
+            doc.save(fileName);
+            
+            // 顯示成功訊息
+            alert('PDF 已成功儲存！');
+          } catch (error) {
+            console.error('PDF生成錯誤:', error);
+            alert('PDF生成失敗，請重試: ' + error.message);
+          }
+        }).catch(error => {
+          console.error('畫布生成錯誤:', error);
+          alert('PDF生成失敗，請重試: ' + error.message);
+        });
+      }, 100);
     }
 
     function sendEmailWithPDF() {
