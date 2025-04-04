@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -124,14 +123,15 @@
     <label>租期（迄）</label>
     <input type="text" id="end">
     <label>月租金</label>
-    <input type="text" id="rent">
+    <input type="number" id="rent" min="0" step="1">
     <label>定金金額</label>
-    <input type="text" id="deposit">
+    <input type="number" id="deposit" min="0" step="1">
     <label>房東 Email</label>
     <input type="email" id="landlord_email">
     <div class="button-group">
       <button onclick="shareToLine()">房東填寫完畢 ➜LINE 傳送給租客</button>
     </div>
+
     <div class="section-title">二、承租人填寫資訊</div>
     <label>承租人姓名</label>
     <input type="text" placeholder="請輸入姓名">
@@ -139,6 +139,7 @@
     <input type="tel" placeholder="請輸入電話">
     <label>電子信箱</label>
     <input type="email" placeholder="請輸入 Email">
+
     <div class="section-title">三、承租人條款同意確認</div>
     <div class="clause-box">
       <ul style="padding-left: 1.2rem; margin: 0; font-size: 0.95rem; line-height: 1.6;">
@@ -153,6 +154,7 @@
       <label><input type="checkbox">本人了解，本訂金為租賃意願之擔保，並不代表已完成承租程序，仍需經出租人進行資料審核。</label>
       <label><input type="checkbox">我了解本收據具《民法第249條》所定之法律效力，並同意受其約束。</label>
     </div>
+
     <div class="section-title">四、承租人簽名確認</div>
     <div style="position: relative; width: 100%; max-width: 100%;">
       <canvas id="signature-pad" class="signature-box" style="width: 100%; max-width: 100%;"></canvas>
@@ -167,6 +169,7 @@
     </div>
     <p class="subtext">請填寫表單資訊並簽名確認。</p>
   </div>
+
   <script>
     const canvas = document.getElementById('signature-pad');
     const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
@@ -185,70 +188,53 @@
       signaturePad.clear();
     }
 
-    async function submitForm() {
-      if (signaturePad.isEmpty()) {
-        alert("請簽名後再送出！");
+    function shareToLine() {
+      const requiredFields = ['name', 'addr', 'start', 'end', 'rent', 'deposit', 'landlord_email'];
+      let missingFields = [];
+
+      requiredFields.forEach(id => {
+        const input = document.getElementById(id);
+        const value = input.value.trim();
+
+        if (!value) {
+          input.style.borderColor = 'red';
+          input.style.backgroundColor = '#fff5f5';
+
+          switch (id) {
+            case 'name': missingFields.push('房東 / 仲介姓名'); break;
+            case 'addr': missingFields.push('租屋地址'); break;
+            case 'start': missingFields.push('租期（起）'); break;
+            case 'end': missingFields.push('租期（迄）'); break;
+            case 'rent': missingFields.push('月租金'); break;
+            case 'deposit': missingFields.push('定金金額'); break;
+            case 'landlord_email': missingFields.push('房東 Email'); break;
+          }
+        } else {
+          input.style.borderColor = '#ccc';
+          input.style.backgroundColor = '#fff';
+        }
+      });
+
+      if (missingFields.length > 0) {
+        alert(`請填寫以下欄位：\n${missingFields.join('\n')}`);
         return;
       }
 
-      const tenantName = document.querySelector('input[placeholder="請輸入姓名"]').value;
-      const tenantEmail = document.querySelector('input[placeholder="請輸入 Email"]').value;
-      const landlordName = document.getElementById("name").value;
-      const landlordEmail = document.getElementById("landlord_email").value;
+      const rentValue = document.getElementById('rent').value.trim();
+      const depositValue = document.getElementById('deposit').value.trim();
+      const numberRegex = /^\d+$/;
 
-      const imgData = signaturePad.toDataURL();
-      const sigImg = new Image();
-      sigImg.src = imgData;
-      sigImg.style.position = "absolute";
-      sigImg.style.left = "0";
-      sigImg.style.top = "0";
-      sigImg.style.width = "100%";
-      sigImg.style.height = "150px";
-      sigImg.style.zIndex = "-1";
-      document.getElementById("signature-pad").parentNode.appendChild(sigImg);
+      if (!numberRegex.test(rentValue)) {
+        alert("月租金請輸入數字！");
+        document.getElementById('rent').style.borderColor = 'red';
+        return;
+      }
+      if (!numberRegex.test(depositValue)) {
+        alert("定金金額請輸入數字！");
+        document.getElementById('deposit').style.borderColor = 'red';
+        return;
+      }
 
-      await new Promise(res => sigImg.onload = res);
-
-      const container = document.querySelector(".container");
-      const canvasElement = await html2canvas(container, { scale: 2 });
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210;
-      const imgHeight = canvasElement.height * imgWidth / canvasElement.width;
-
-      const imgDataFull = canvasElement.toDataURL("image/png");
-      pdf.addImage(imgDataFull, "PNG", 0, 0, imgWidth, imgHeight);
-
-      const pdfBlob = pdf.output("blob");
-
-      const formData = new FormData();
-      formData.append("file", pdfBlob, "rent-receipt.pdf");
-
-      const uploadRes = await fetch("https://file.io", {
-        method: "POST",
-        body: formData
-      });
-      const uploadData = await uploadRes.json();
-      const pdfUrl = uploadData.link;
-
-      emailjs.init("ATjCQOOm8g4SSqhSP");
-      const emailData = (name, email) => ({
-        recipient_name: name,
-        recipient_email: email,
-        user_name: tenantName,
-        user_email: tenantEmail,
-        pdf_url: pdfUrl
-      });
-
-      await emailjs.send("service_lvbtpz8", "template_sftcyax", emailData(tenantName, tenantEmail));
-      await emailjs.send("service_lvbtpz8", "template_sftcyax", emailData(landlordName, landlordEmail));
-
-      alert("PDF 已成功寄出至房東與承租人信箱！");
-      sigImg.remove();
-    }
-
-    function shareToLine() {
       const name = encodeURIComponent(document.getElementById('name').value);
       const addr = encodeURIComponent(document.getElementById('addr').value);
       const start = encodeURIComponent(document.getElementById('start').value);
