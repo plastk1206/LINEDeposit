@@ -127,6 +127,35 @@
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
 <body>
+  <!-- 隱藏的 PDF 收據模板 -->
+<div id="pdf-template" style="display: none; padding: 2rem; font-family: 'Noto Sans TC'; max-width: 800px;">
+  <h2 style="color:#00C300;">租屋定金收據</h2>
+  <p><strong>日期：</strong><span id="pdf-date"></span></p>
+
+  <h3>房東資訊</h3>
+  <p><strong>姓名：</strong><span id="pdf-landlord-name"></span></p>
+  <p><strong>租屋地址：</strong><span id="pdf-addr"></span></p>
+  <p><strong>租期：</strong><span id="pdf-start"></span> 至 <span id="pdf-end"></span></p>
+  <p><strong>月租金：</strong><span id="pdf-rent"></span> 元</p>
+  <p><strong>定金金額：</strong><span id="pdf-deposit"></span> 元</p>
+
+  <h3>承租人資訊</h3>
+  <p><strong>姓名：</strong><span id="pdf-tenant-name"></span></p>
+  <p><strong>電話：</strong><span id="pdf-tenant-phone"></span></p>
+  <p><strong>Email：</strong><span id="pdf-tenant-email"></span></p>
+  <p><strong>備註：</strong><span id="pdf-note"></span></p>
+
+  <h3>條款確認</h3>
+  <ul style="line-height: 1.6;">
+    <li>訂金為保留租賃意願之用，一旦審核通過即成立契約預約。</li>
+    <li>若於預定簽約日前，因甲方（承租人）之事由致不能履行時，定金不得請求返還。</li>
+    <li>若乙方同意後，因乙方之事由致不能履行時，應雙倍返還定金。</li>
+  </ul>
+
+  <h3>簽名</h3>
+  <img id="pdf-signature" src="" alt="簽名" style="border:1px solid #ccc; width: 300px; height: auto; margin-top: 1rem;">
+</div>
+
   <div id="loading-overlay" class="hidden">
     <h2>正在生成PDF...</h2>
     <p>請稍候，處理中</p>
