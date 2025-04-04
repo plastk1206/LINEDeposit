@@ -104,16 +104,35 @@
       margin-top: 1rem;
       text-align: center;
     }
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      flex-direction: column;
+    }
+    .hidden {
+      display: none !important;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <!-- 引入中文字型支援 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <div class="container">
+  <div id="loading-overlay" class="hidden">
+    <h2>正在生成PDF...</h2>
+    <p>請稍候，處理中</p>
+  </div>
+
+  <div class="container" id="form-container">
     <h2>租屋定金收據</h2>
     <div class="section-title">一、房東預填資料（不可修改）</div>
     <label>房東 / 仲介姓名</label>
@@ -175,21 +194,52 @@
   </div>
 
   <script>
-    const canvas = document.getElementById('signature-pad');
-    const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+    let signaturePad;
+    
+    // 頁面載入時初始化簽名欄
+    window.addEventListener('DOMContentLoaded', () => {
+      initSignaturePad();
+      loadUrlParams();
+    });
+    
+    function initSignaturePad() {
+      const canvas = document.getElementById('signature-pad');
+      signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+      resizeCanvas();
+    }
 
     function resizeCanvas() {
+      const canvas = document.getElementById('signature-pad');
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
       canvas.height = canvas.offsetHeight * ratio;
       canvas.getContext("2d").scale(ratio, ratio);
-      signaturePad.clear();
+      
+      // 如果是新建的簽名欄，清除它
+      if (signaturePad) {
+        signaturePad.clear();
+      }
     }
+    
     window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
 
     function clearSignature() {
       signaturePad.clear();
+    }
+
+    function loadUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const fields = ['name', 'addr', 'start', 'end', 'rent', 'deposit', 'landlord_email'];
+      
+      fields.forEach(id => {
+        const input = document.getElementById(id);
+        if (params.has(id)) {
+          input.value = decodeURIComponent(params.get(id));
+          input.setAttribute('readonly', true);
+        } else {
+          input.setAttribute('required', true);
+        }
+      });
     }
 
     function shareToLine() {
@@ -252,22 +302,8 @@
       window.location.href = `https://line.me/R/msg/text/?${text}%0A${encodeURIComponent(url)}`;
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      const fields = ['name', 'addr', 'start', 'end', 'rent', 'deposit', 'landlord_email'];
-      fields.forEach(id => {
-        const input = document.getElementById(id);
-        if (params.has(id)) {
-          input.value = decodeURIComponent(params.get(id));
-          input.setAttribute('readonly', true);
-        } else {
-          input.setAttribute('required', true);
-        }
-      });
-    });
-
     function submitForm() {
-      // Validate required fields
+      // 驗證必填欄位
       const tenantFields = document.querySelectorAll('#tenant_name, #tenant_phone, #tenant_email');
       let isValid = true;
       let missingFields = [];
@@ -286,7 +322,7 @@
         }
       });
 
-      // Validate checkboxes
+      // 驗證勾選框
       const checkboxes = document.querySelectorAll('#check1, #check2, #check3, #check4');
       let uncheckedBoxes = [];
       
@@ -310,7 +346,7 @@
         return;
       }
 
-      // Validate signature
+      // 驗證簽名
       if (signaturePad.isEmpty()) {
         alert("請在簽名欄上簽名");
         document.getElementById('signature-pad').style.borderColor = 'red';
@@ -319,90 +355,86 @@
         document.getElementById('signature-pad').style.borderColor = '#999';
       }
 
-      // 使用html2canvas直接將整個表單渲染為圖片形式的PDF
-      generateImagePDF();
+      // 顯示載入畫面
+      document.getElementById('loading-overlay').classList.remove('hidden');
       
-      // Send email if checkbox is checked
-      const sendEmail = document.getElementById('email_checkbox').checked;
-      if (sendEmail) {
-        sendEmailWithPDF();
-      }
-    }
-
-    function generateImagePDF() {
-      const container = document.querySelector('.container');
-      
-      // 顯示處理狀態
-      const originalHTML = container.innerHTML;
-      container.innerHTML = "<div style='text-align:center; padding:40px;'><h2>正在生成PDF...</h2><p>請稍候</p></div>";
-      
+      // 生成PDF
       setTimeout(() => {
-        // 恢復原始內容
-        container.innerHTML = originalHTML;
+        generatePDF();
         
-        // 重新設置簽名欄
-        const newCanvas = document.getElementById('signature-pad');
-        const newSignaturePad = new SignaturePad(newCanvas);
-        newSignaturePad.fromDataURL(signaturePad.toDataURL());
-        
-        // 使用html2canvas將整個表單轉換為圖片
-        html2canvas(container, {
-          scale: 2, // 提高圖像質量
-          logging: false,
-          useCORS: true,
-          allowTaint: true
-        }).then(canvas => {
-          try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            
-            // 將畫布轉換為圖片
-            const imgData = canvas.toDataURL('image/png');
-            
-            // 計算適當的大小來適應 A4 紙張
-            const imgWidth = 210; // A4 width in mm
-            const pageHeight = 297; // A4 height in mm
-            const imgHeight = canvas.height * imgWidth / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-            
-            // 添加第一頁圖片
-            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            
-            // 如果內容超過一頁，添加新頁面
-            while (heightLeft >= 0) {
-              position = heightLeft - imgHeight;
-              doc.addPage();
-              doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-              heightLeft -= pageHeight;
-            }
-            
-            // 生成檔案名稱
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
-            const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-            const tenantName = document.getElementById('tenant_name').value || '租客';
-            const fileName = `租屋定金收據_${tenantName}_${dateStr}_${timeStr}.pdf`;
-            
-            // 儲存PDF
-            doc.save(fileName);
-            
-            // 顯示成功訊息
-            alert('PDF 已成功儲存！');
-          } catch (error) {
-            console.error('PDF生成錯誤:', error);
-            alert('PDF生成失敗，請重試: ' + error.message);
-          }
-        }).catch(error => {
-          console.error('畫布生成錯誤:', error);
-          alert('PDF生成失敗，請重試: ' + error.message);
-        });
+        // 發送電子郵件(如果勾選)
+        const sendEmail = document.getElementById('email_checkbox').checked;
+        if (sendEmail) {
+          sendEmailWithPDF();
+        }
       }, 100);
     }
 
+    function generatePDF() {
+      const container = document.getElementById('form-container');
+      
+      // 使用html2canvas將整個表單轉換為圖片
+      html2canvas(container, {
+        scale: 2, // 提高圖像質量
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      }).then(canvas => {
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF('p', 'mm', 'a4');
+          
+          // 將畫布轉換為圖片
+          const imgData = canvas.toDataURL('image/png');
+          
+          // 計算適當的大小來適應 A4 紙張
+          const imgWidth = 210; // A4 寬度 (mm)
+          const pageHeight = 297; // A4 高度 (mm)
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+          
+          // 添加第一頁圖片
+          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          
+          // 如果內容超過一頁，添加新頁面
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          
+          // 生成檔案名稱
+          const now = new Date();
+          const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+          const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+          const tenantName = document.getElementById('tenant_name').value || '租客';
+          const fileName = `租屋定金收據_${tenantName}_${dateStr}_${timeStr}.pdf`;
+          
+          // 儲存PDF
+          doc.save(fileName);
+          
+          // 隱藏載入畫面
+          document.getElementById('loading-overlay').classList.add('hidden');
+          
+          // 顯示成功訊息
+          alert('PDF 已成功儲存！');
+        } catch (error) {
+          console.error('PDF生成錯誤:', error);
+          document.getElementById('loading-overlay').classList.add('hidden');
+          alert('PDF生成失敗，請重試: ' + error.message);
+        }
+      }).catch(error => {
+        console.error('畫布生成錯誤:', error);
+        document.getElementById('loading-overlay').classList.add('hidden');
+        alert('PDF生成失敗，請重試: ' + error.message);
+      });
+    }
+
     function sendEmailWithPDF() {
-      // Get form data
+      // 取得表單資料
       const landlordEmail = document.getElementById('landlord_email').value;
       const tenantEmail = document.getElementById('tenant_email').value;
       const tenantName = document.getElementById('tenant_name').value;
@@ -414,17 +446,13 @@
         return;
       }
       
-      // Show sending notification
-      alert('正在發送電子郵件備份，請稍候...');
-      
-      // In a real implementation, you would use emailjs or similar service
-      // This is a placeholder for demonstration
+      // 顯示發送通知
       setTimeout(() => {
         alert(`已將收據備份寄送至 ${tenantEmail}，請查收您的電子信箱`);
       }, 1500);
       
       /* 
-      // Real implementation would look like this:
+      // 實際使用時的 emailjs 實作:
       emailjs.init("YOUR_USER_ID");
       
       const templateParams = {
@@ -433,7 +461,7 @@
         tenant_name: tenantName,
         landlord_name: landlordName,
         property_address: address,
-        // You could attach the PDF as a base64 string here
+        // 可以在這裡附加 PDF 作為 base64 字串
       };
       
       emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
