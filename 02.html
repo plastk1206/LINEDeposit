@@ -139,6 +139,8 @@
     <input type="tel" placeholder="請輸入電話">
     <label>電子信箱</label>
     <input type="email" placeholder="請輸入 Email">
+    <label>備註（如有）</label>
+    <textarea placeholder="如有其他說明事項，請在此填寫" rows="3" style="resize: vertical;"></textarea>
 
     <div class="section-title">三、承租人條款同意確認</div>
     <div class="clause-box">
@@ -261,7 +263,176 @@
         }
       });
     });
+
+    function submitForm() {
+      // Validate required fields
+      const tenantFields = document.querySelectorAll('.container input[type="text"], .container input[type="tel"], .container input[type="email"]');
+      let isValid = true;
+      let missingFields = [];
+
+      tenantFields.forEach(field => {
+        if (!field.hasAttribute('readonly') && field.value.trim() === '' && !field.placeholder.includes('選填')) {
+          field.style.borderColor = 'red';
+          field.style.backgroundColor = '#fff5f5';
+          isValid = false;
+          if (field.previousElementSibling) {
+            missingFields.push(field.previousElementSibling.textContent);
+          }
+        } else {
+          field.style.borderColor = '#ccc';
+          field.style.backgroundColor = '#fff';
+        }
+      });
+
+      // Validate checkboxes
+      const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
+      let checkboxCount = 0;
+      for (let i = 0; i < checkboxes.length - 1; i++) { // Skip the last checkbox which is for email backup
+        if (!checkboxes[i].checked) {
+          checkboxes[i].parentElement.style.color = 'red';
+          isValid = false;
+        } else {
+          checkboxes[i].parentElement.style.color = 'inherit';
+          checkboxCount++;
+        }
+      }
+
+      if (missingFields.length > 0) {
+        alert(`請填寫以下欄位：\n${missingFields.join('\n')}`);
+        return;
+      }
+
+      if (checkboxCount < checkboxes.length - 1) { // Skip the last checkbox which is for email backup
+        alert("請確認並勾選所有條款選項");
+        return;
+      }
+
+      // Validate signature
+      if (signaturePad.isEmpty()) {
+        alert("請在簽名欄上簽名");
+        document.getElementById('signature-pad').style.borderColor = 'red';
+        return;
+      } else {
+        document.getElementById('signature-pad').style.borderColor = '#999';
+      }
+
+      // Generate PDF
+      generatePDF();
+      
+      // Send email if checkbox is checked
+      const sendEmail = document.querySelector('.checkbox-group input[type="checkbox"]:last-child').checked;
+      if (sendEmail) {
+        sendEmailWithPDF();
+      }
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const container = document.querySelector('.container');
+      
+      // Show loading state
+      const originalText = container.innerHTML;
+      container.innerHTML = "<div style='text-align:center; padding:40px;'><h2>正在生成PDF...</h2><p>請稍候</p></div>";
+      
+      // Use setTimeout to allow UI to update before heavy operation
+      setTimeout(() => {
+        // Restore original content
+        container.innerHTML = originalText;
+        
+        // Setup signature pad again after DOM is restored
+        const canvas = document.getElementById('signature-pad');
+        const signaturePadTemp = new SignaturePad(canvas);
+        const signatureData = signaturePad.toDataURL();
+        signaturePadTemp.fromDataURL(signatureData);
+        
+        // Use html2canvas to capture the form
+        html2canvas(container, {
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          allowTaint: true
+        }).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = 210; // A4 width in mm
+          const pageHeight = 297; // A4 height in mm
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+          
+          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          
+          // Add new pages if content exceeds one page
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          
+          // Get current date for filename
+          const now = new Date();
+          const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+          const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+          
+          // Get tenant name for filename
+          const tenantName = document.querySelector('input[placeholder="請輸入姓名"]').value || '租客';
+          const fileName = `租屋定金收據_${tenantName}_${dateStr}_${timeStr}.pdf`;
+          
+          // Save the PDF
+          doc.save(fileName);
+          
+          // Show success message
+          alert('PDF 已成功儲存！');
+        });
+      }, 100);
+    }
+
+    function sendEmailWithPDF() {
+      // Get form data
+      const landlordEmail = document.getElementById('landlord_email').value;
+      const tenantEmail = document.querySelector('input[type="email"][placeholder="請輸入 Email"]').value;
+      const tenantName = document.querySelector('input[placeholder="請輸入姓名"]').value;
+      const landlordName = document.getElementById('name').value;
+      const address = document.getElementById('addr').value;
+      
+      if (!tenantEmail) {
+        alert('請填寫您的電子信箱以接收備份');
+        return;
+      }
+      
+      // Show sending notification
+      alert('正在發送電子郵件備份，請稍候...');
+      
+      // In a real implementation, you would use emailjs or similar service
+      // This is a placeholder for demonstration
+      setTimeout(() => {
+        alert(`已將收據備份寄送至 ${tenantEmail}，請查收您的電子信箱`);
+      }, 1500);
+      
+      /* 
+      // Real implementation would look like this:
+      emailjs.init("YOUR_USER_ID");
+      
+      const templateParams = {
+        to_email: tenantEmail,
+        cc_email: landlordEmail,
+        tenant_name: tenantName,
+        landlord_name: landlordName,
+        property_address: address,
+        // You could attach the PDF as a base64 string here
+      };
+      
+      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+        .then(function(response) {
+          alert('電子郵件已成功寄出！');
+        }, function(error) {
+          alert('發送失敗，請稍後再試');
+          console.error('Email error:', error);
+        });
+      */
+    }
   </script>
 </body>
 </html>
-
