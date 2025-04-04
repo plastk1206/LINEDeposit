@@ -134,13 +134,13 @@
 
     <div class="section-title">二、承租人填寫資訊</div>
     <label>承租人姓名</label>
-    <input type="text" placeholder="請輸入姓名">
+    <input type="text" id="tenant_name" placeholder="請輸入姓名">
     <label>聯絡電話</label>
-    <input type="tel" placeholder="請輸入電話">
+    <input type="tel" id="tenant_phone" placeholder="請輸入電話">
     <label>電子信箱</label>
-    <input type="email" placeholder="請輸入 Email">
+    <input type="email" id="tenant_email" placeholder="請輸入 Email">
     <label>備註（如有）</label>
-    <textarea placeholder="如有其他說明事項，請在此填寫" rows="3" style="resize: vertical;"></textarea>
+    <textarea id="tenant_note" placeholder="如有其他說明事項，請在此填寫" rows="3" style="resize: vertical;"></textarea>
 
     <div class="section-title">三、承租人條款同意確認</div>
     <div class="clause-box">
@@ -151,10 +151,10 @@
       </ul>
     </div>
     <div class="checkbox-group">
-      <label><input type="checkbox">我了解並同意相關仲介服務費條款。</label>
-      <label><input type="checkbox">我已詳細閱讀並同意上述條款內容，並確認提供資料為真實無誤。</label>
-      <label><input type="checkbox">本人了解，本訂金為租賃意願之擔保，並不代表已完成承租程序，仍需經出租人進行資料審核。</label>
-      <label><input type="checkbox">我了解本收據具《民法第249條》所定之法律效力，並同意受其約束。</label>
+      <label><input type="checkbox" id="check1">我了解並同意相關仲介服務費條款。</label>
+      <label><input type="checkbox" id="check2">我已詳細閱讀並同意上述條款內容，並確認提供資料為真實無誤。</label>
+      <label><input type="checkbox" id="check3">本人了解，本訂金為租賃意願之擔保，並不代表已完成承租程序，仍需經出租人進行資料審核。</label>
+      <label><input type="checkbox" id="check4">我了解本收據具《民法第249條》所定之法律效力，並同意受其約束。</label>
     </div>
 
     <div class="section-title">四、承租人簽名確認</div>
@@ -163,7 +163,7 @@
       <span style="position: absolute; top: 10px; left: 16px; color: #aaa; font-size: 0.9rem;">在此簽名</span>
     </div>
     <div class="checkbox-group">
-      <label><input type="checkbox"> 同時發送 Email 備份</label>
+      <label><input type="checkbox" id="email_checkbox"> 同時發送 Email 備份</label>
     </div>
     <div class="button-group">
       <button style="background-color: #ccc; color: #333;" onclick="clearSignature()">清除簽名</button>
@@ -266,12 +266,12 @@
 
     function submitForm() {
       // Validate required fields
-      const tenantFields = document.querySelectorAll('.container input[type="text"], .container input[type="tel"], .container input[type="email"]');
+      const tenantFields = document.querySelectorAll('#tenant_name, #tenant_phone, #tenant_email');
       let isValid = true;
       let missingFields = [];
 
       tenantFields.forEach(field => {
-        if (!field.hasAttribute('readonly') && field.value.trim() === '' && !field.placeholder.includes('選填')) {
+        if (field.value.trim() === '') {
           field.style.borderColor = 'red';
           field.style.backgroundColor = '#fff5f5';
           isValid = false;
@@ -285,24 +285,25 @@
       });
 
       // Validate checkboxes
-      const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
-      let checkboxCount = 0;
-      for (let i = 0; i < checkboxes.length - 1; i++) { // Skip the last checkbox which is for email backup
-        if (!checkboxes[i].checked) {
-          checkboxes[i].parentElement.style.color = 'red';
+      const checkboxes = document.querySelectorAll('#check1, #check2, #check3, #check4');
+      let uncheckedBoxes = [];
+      
+      checkboxes.forEach((checkbox, index) => {
+        if (!checkbox.checked) {
+          checkbox.parentElement.style.color = 'red';
+          uncheckedBoxes.push(index + 1);
           isValid = false;
         } else {
-          checkboxes[i].parentElement.style.color = 'inherit';
-          checkboxCount++;
+          checkbox.parentElement.style.color = 'inherit';
         }
-      }
+      });
 
       if (missingFields.length > 0) {
         alert(`請填寫以下欄位：\n${missingFields.join('\n')}`);
         return;
       }
 
-      if (checkboxCount < checkboxes.length - 1) { // Skip the last checkbox which is for email backup
+      if (uncheckedBoxes.length > 0) {
         alert("請確認並勾選所有條款選項");
         return;
       }
@@ -317,122 +318,87 @@
       }
 
       // Generate PDF
-      generatePDF();
+      generateTextPDF();
       
       // Send email if checkbox is checked
-      const sendEmail = document.querySelector('.checkbox-group input[type="checkbox"]:last-child').checked;
+      const sendEmail = document.getElementById('email_checkbox').checked;
       if (sendEmail) {
         sendEmailWithPDF();
       }
     }
 
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      // 顯示處理狀態
-      const container = document.querySelector('.container');
-      const originalText = container.innerHTML;
-      container.innerHTML = "<div style='text-align:center; padding:40px;'><h2>正在生成PDF...</h2><p>請稍候</p></div>";
-      
-      setTimeout(() => {
-        // 恢復原始內容
-        container.innerHTML = originalText;
+    function generateTextPDF() {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
         
-        // 重新設置簽名欄
-        const canvas = document.getElementById('signature-pad');
-        const signaturePadTemp = new SignaturePad(canvas);
+        // 顯示處理狀態
+        const container = document.querySelector('.container');
+        const originalHTML = container.innerHTML;
+        container.innerHTML = "<div style='text-align:center; padding:40px;'><h2>正在生成PDF...</h2><p>請稍候</p></div>";
+        
+        // 獲取表單資料
+        const landlordName = document.getElementById('name').value;
+        const address = document.getElementById('addr').value;
+        const startDate = document.getElementById('start').value;
+        const endDate = document.getElementById('end').value;
+        const rent = document.getElementById('rent').value;
+        const deposit = document.getElementById('deposit').value;
+        const landlordEmail = document.getElementById('landlord_email').value;
+        
+        const tenantName = document.getElementById('tenant_name').value;
+        const tenantPhone = document.getElementById('tenant_phone').value;
+        const tenantEmail = document.getElementById('tenant_email').value;
+        const tenantNote = document.getElementById('tenant_note').value;
+        
         const signatureData = signaturePad.toDataURL();
-        signaturePadTemp.fromDataURL(signatureData);
         
-        // 收集所有表單數據
-        const formData = {
-          // 房東資料
-          landlordName: document.getElementById('name').value,
-          address: document.getElementById('addr').value,
-          startDate: document.getElementById('start').value,
-          endDate: document.getElementById('end').value,
-          rent: document.getElementById('rent').value,
-          deposit: document.getElementById('deposit').value,
-          landlordEmail: document.getElementById('landlord_email').value,
-          
-          // 承租人資料
-          tenantInputs: document.querySelectorAll('.container input[type="text"]:not([readonly]), .container input[type="tel"], .container input[type="email"]:not([readonly]), .container textarea'),
-          
-          // 簽名
-          signature: signatureData
-        };
-        
-        // 開始生成文字格式的PDF
+        // 設定PDF參數
         const pageWidth = 210; // A4寬度mm
         const margin = 20; // 邊距mm
         const contentWidth = pageWidth - (margin * 2);
         
-        // 設置字型和大小
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(16);
+        // 設定字型和大小
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
         
-        // 標題和日期
+        // 標題
         const today = new Date();
         const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
         doc.text('租屋定金收據', pageWidth/2, margin, {align: 'center'});
-        doc.setFontSize(10);
-        doc.text(`生成日期: ${dateStr}`, pageWidth - margin, margin, {align: 'right'});
         
-        // 重設字型大小為正文大小
-        doc.setFontSize(12);
-        let yPosition = margin + 15;
+        // 日期
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`生成日期: ${dateStr}`, pageWidth - margin, margin + 10, {align: 'right'});
+        
+        let yPosition = margin + 20;
         
         // 分隔線
-        doc.setDrawColor(200, 200, 200);
+        doc.setDrawColor(150, 150, 150);
         doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 5;
+        yPosition += 10;
         
-        // 添加房東資料區塊
+        // 一、房東資料
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.text('一、房東資料', margin, yPosition);
-        yPosition += 8;
+        yPosition += 10;
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         
-        // 房東資訊
         const landlordInfo = [
-          `房東/仲介姓名: ${formData.landlordName}`,
-          `租屋地址: ${formData.address}`,
-          `租期: ${formData.startDate} 至 ${formData.endDate}`,
-          `月租金: ${formData.rent} 元`,
-          `定金金額: ${formData.deposit} 元`,
-          `房東Email: ${formData.landlordEmail}`
+          `房東/仲介姓名: ${landlordName}`,
+          `租屋地址: ${address}`,
+          `租期: ${startDate} 至 ${endDate}`,
+          `月租金: ${rent} 元`,
+          `定金金額: ${deposit} 元`,
+          `房東Email: ${landlordEmail}`
         ];
         
         landlordInfo.forEach(info => {
-          doc.text(info, margin, yPosition);
-          yPosition += 7;
-        });
-        
-        // 分隔線
-        yPosition += 3;
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 8;
-        
-        // 承租人資料區塊
-        doc.setFontSize(14);
-        doc.text('二、承租人資料', margin, yPosition);
-        yPosition += 8;
-        doc.setFontSize(12);
-        
-        // 承租人資訊
-        const tenantData = [];
-        formData.tenantInputs.forEach(input => {
-          if (input.previousElementSibling) {
-            const label = input.previousElementSibling.textContent.trim();
-            const value = input.value.trim() || '(未填寫)';
-            tenantData.push(`${label}: ${value}`);
-          }
-        });
-        
-        tenantData.forEach(info => {
           // 處理長文字換行
-          if (info.length > 50) {
+          if (info.length > 60) {
             const lines = doc.splitTextToSize(info, contentWidth);
             lines.forEach(line => {
               doc.text(line, margin, yPosition);
@@ -445,75 +411,137 @@
         });
         
         // 分隔線
-        yPosition += 3;
+        yPosition += 5;
         doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 8;
+        yPosition += 10;
         
-        // 條款同意確認
+        // 二、承租人資料
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.text('三、條款同意確認', margin, yPosition);
-        yPosition += 8;
+        doc.text('二、承租人資料', margin, yPosition);
+        yPosition += 10;
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         
-        const clauseText = [
+        const tenantInfo = [
+          `承租人姓名: ${tenantName}`,
+          `聯絡電話: ${tenantPhone}`,
+          `電子信箱: ${tenantEmail}`,
+          `備註: ${tenantNote || '(無)'}`
+        ];
+        
+        tenantInfo.forEach(info => {
+          // 處理長文字換行
+          if (info.length > 60) {
+            const lines = doc.splitTextToSize(info, contentWidth);
+            lines.forEach(line => {
+              doc.text(line, margin, yPosition);
+              yPosition += 7;
+            });
+          } else {
+            doc.text(info, margin, yPosition);
+            yPosition += 7;
+          }
+        });
+        
+        // 分隔線
+        yPosition += 5;
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 10;
+        
+        // 三、條款同意確認
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('三、條款同意確認', margin, yPosition);
+        yPosition += 10;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        
+        const clauses = [
           '• 訂金為保留租賃意願之用，一旦審核通過即成立契約預約。',
           '• 若於預定簽約日前，因甲方（承租人）之事由致不能履行時，定金不得請求返還。',
           '• 若乙方同意後，因乙方之事由致不能履行時，應雙倍返還定金。'
         ];
         
-        clauseText.forEach(text => {
-          doc.text(text, margin, yPosition);
+        clauses.forEach(clause => {
+          doc.text(clause, margin, yPosition);
           yPosition += 7;
         });
         
-        yPosition += 5;
+        yPosition += 3;
         doc.text('承租人已確認並同意上述所有條款', margin, yPosition);
-        yPosition += 10;
         
         // 分隔線
+        yPosition += 7;
         doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 8;
+        yPosition += 10;
         
-        // 簽名區塊
+        // 四、簽名確認
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.text('四、承租人簽名確認', margin, yPosition);
         yPosition += 10;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
         
         // 添加簽名圖片
-        if (formData.signature) {
-          const imgWidth = 70;
-          const imgHeight = 40;
-          doc.addImage(formData.signature, 'PNG', margin, yPosition, imgWidth, imgHeight);
-          yPosition += imgHeight + 5;
+        const imgWidth = 70;
+        const imgHeight = 40;
+        try {
+          doc.addImage(signatureData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+          yPosition += imgHeight + 10;
+        } catch (e) {
+          console.error('簽名圖片添加失敗:', e);
+          doc.text('簽名添加失敗', margin, yPosition);
+          yPosition += 10;
         }
         
-        // 添加確認文字和日期
-        doc.setFontSize(12);
+        // 添加確認日期
         doc.text(`簽名確認日期: ${dateStr}`, margin, yPosition);
         
-        // 添加頁腳
-        const footerText = '本收據具有法律效力，請妥善保存';
+        // 頁腳
         doc.setFontSize(10);
-        doc.text(footerText, pageWidth/2, 287, {align: 'center'});
+        doc.setTextColor(100, 100, 100);
+        doc.text('本收據具有法律效力，請妥善保存', pageWidth/2, 280, {align: 'center'});
         
         // 生成檔案名稱
-        const tenantName = document.querySelector('input[placeholder="請輸入姓名"]').value || '租客';
         const fileTimeStr = `${today.getFullYear()}${(today.getMonth()+1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}_${today.getHours().toString().padStart(2, '0')}${today.getMinutes().toString().padStart(2, '0')}`;
         const fileName = `租屋定金收據_${tenantName}_${fileTimeStr}.pdf`;
         
         // 儲存PDF
         doc.save(fileName);
         
+        // 還原表單
+        container.innerHTML = originalHTML;
+        
+        // 重新設置簽名欄
+        const newCanvas = document.getElementById('signature-pad');
+        const newSignaturePad = new SignaturePad(newCanvas);
+        newSignaturePad.fromDataURL(signatureData);
+        
+        // 調整畫布大小
+        resizeCanvas();
+        
         // 顯示成功訊息
         alert('PDF 已成功儲存！');
-      }, 100);
+      } catch (error) {
+        console.error('PDF生成錯誤:', error);
+        alert('PDF生成失敗，請重試: ' + error.message);
+        
+        // 還原表單
+        const container = document.querySelector('.container');
+        container.innerHTML = originalHTML;
+        
+        // 調整畫布大小
+        resizeCanvas();
+      }
     }
 
     function sendEmailWithPDF() {
       // Get form data
       const landlordEmail = document.getElementById('landlord_email').value;
-      const tenantEmail = document.querySelector('input[type="email"][placeholder="請輸入 Email"]').value;
-      const tenantName = document.querySelector('input[placeholder="請輸入姓名"]').value;
+      const tenantEmail = document.getElementById('tenant_email').value;
+      const tenantName = document.getElementById('tenant_name').value;
       const landlordName = document.getElementById('name').value;
       const address = document.getElementById('addr').value;
       
